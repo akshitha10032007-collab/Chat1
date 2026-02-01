@@ -1,0 +1,42 @@
+class MainActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        val input = findViewById<EditText>(R.id.inputText)
+        val output = findViewById<TextView>(R.id.outputText)
+        val button = findViewById<Button>(R.id.sendBtn)
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl("https://api.openai.com/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val api = retrofit.create(ApiService::class.java)
+
+        button.setOnClickListener {
+            val question = input.text.toString()
+
+            val request = ChatRequest(
+                messages = listOf(Message("user", question))
+            )
+
+            api.getChatResponse(request).enqueue(object : Callback<ChatResponse> {
+                override fun onResponse(
+                    call: Call<ChatResponse>,
+                    response: Response<ChatResponse>
+                ) {
+                    if (response.isSuccessful) {
+                        output.text =
+                            response.body()?.choices?.get(0)?.message?.content
+                    }
+                }
+
+                override fun onFailure(call: Call<ChatResponse>, t: Throwable) {
+                    output.text = "Error: ${t.message}"
+                }
+            })
+        }
+    }
+}
